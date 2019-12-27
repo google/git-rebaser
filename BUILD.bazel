@@ -1,0 +1,36 @@
+py_library(
+    name = "git_tree",
+    srcs = [
+        "git_tree.py",
+    ],
+    deps = [],
+)
+
+py_test(
+    name = "git_tree_test",
+    srcs = [
+        "git_tree_test.py",
+    ],
+    deps = [":git_tree"],
+)
+
+py_library(
+    name = "git_rebaser",
+    srcs = [
+        "common.py",
+        "git_rebaser.py",
+    ],
+    deps = [
+        ":git_tree",
+    ],
+)
+
+py_binary(
+    name = "git_rebaser_main",
+    srcs = [
+        "git_rebaser_main.py",
+    ],
+    deps = [
+        ":git_rebaser",
+    ],
+)
