@@ -91,7 +91,11 @@ def main():
   for key, value in _ARG_ALIASES.items():
     if sub_arg_name in value:
       sub_arg_name = key
+  if sub_arg_name is None:
+    parser.print_help()
+    exit(1)
 
+  # pass the sub argument to corresponding method call.
   rebaser = git_rebaser.GitRebaser()
   getattr(rebaser, sub_arg_name)(args)
 
