@@ -29,15 +29,19 @@ List all the branches:
 $GR ll
 ```
 You should see something like:
+```
 `- 0 [master] : (sync 8 weeks ago) a12345678
+```
 
 After added new file with "git add", then commit by:
 ``` shell
 $GR ci
 ```
+```
 Then use "ll" to list branch will be something like:
 `- 0 [master] : (sync 8 weeks ago) a12345678
    `- 1  : Commit test 1  <===============
+```
 
 The number 1 is the branch name automatically created by this tool. Followed by
 the commit message. Followed by the arrow point which branch you are in right
@@ -49,13 +53,17 @@ $GR up 0
 $GR ll
 ```
 shows:
+```
 `- 0 [master] : (sync 8 weeks ago) a12345678  <===============
    `- 1  : Commit test 1
+```
 
 If you add another commit now, the tree will be:
+```
 `- 0 [master] : (sync 8 weeks ago) a12345678
    |- 1  : Commit test 1
    `- 2  : Commit test 2  <===============
+```
 
 Note: it will automatically switch to the last commited branch.
 
@@ -64,9 +72,11 @@ Now you can do rebase:
 $GR rebase -s 2 -d 1
 $GR ll
 ```
+```
 `- 0 [master] : (sync 8 weeks ago) a12345678
    `- 1  : Commit test 1
       `- 2  : Commit test 2  <===============
+```
 
 If rebase failed due to the conflict, you can resolve the conflict by regular
 git procedure, then do the same rebase command again to sync the branches.
