@@ -1,17 +1,14 @@
 # Rebaser For Git
 
-This repository contains a rebaser tool for git. This tool makes rebasing easier
-if anyone is following "one branch per commit" philosophy. This tool will sit on
-top of normal "git" command, meaning you can do all "READ" operation using git
-command, but some "WRITE" operation needs to be done by this tool.
+This repository contains a rebaser tool for using git with gerrit. This tool
+makes rebasing easier if anyone is following "one branch per commit" philosophy.
+This tool will sit on top of normal "git" command, meaning you can do all "READ"
+operation using git command, but some "WRITE" operation(commit, rebase) can be
+helped from this tool.
 
 # Mechanics
 
-Due to git is very hard to track the parent/child branch info, this tool will
-create a local file inside the any git repository to track the branch
-relationship as a tree data structure. So any operation affecting the branches
-relationship should be done by this tool. For example: commit, rebase, pull,
-etc.
+This tool parses local head to get the relationship between local branches.
 
 # Examples
 
@@ -37,8 +34,8 @@ After added new file with "git add", then commit by:
 ``` shell
 $GR ci
 ```
-```
 Then use "ll" to list branch will be something like:
+```
 `- 0 [master] : (sync 8 weeks ago) a12345678
    `- 1  : Commit test 1  <===============
 ```

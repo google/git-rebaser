@@ -18,11 +18,11 @@ import json
 
 class GitTree(object):
 
-  def __init__(self, data_path, load=True):
+  def __init__(self, _data_path=None, load=True):
     self.c = {}  # node -> list of children,
     self.p = {}
-    self.data_path = data_path
-    self.node_names = []
+    self._data_path = _data_path
+    self._node_names = []
     if load:
       self._load()
 
@@ -35,29 +35,34 @@ class GitTree(object):
 
   def _create_node(self, node_name):
     node_i = -1
-    for i in range(len(self.node_names)):
-      if self.node_names[i] is None:
+    for i in range(len(self._node_names)):
+      if self._node_names[i] is None:
         # add it here
         node_i = i
         if node_name is None:
-          self.node_names[i] = i
+          self._node_names[i] = i
         else:
-          self.node_names[i] = node_name
+          self._node_names[i] = node_name
         break
     if node_i == -1:
-      node_i = len(self.node_names)
+      node_i = len(self._node_names)
       if node_name is None:
-        self.node_names.append(node_i)
+        self._node_names.append(node_i)
       else:
-        self.node_names.append(node_name)
+        self._node_names.append(node_name)
     self._create_node_by_index(node_i)
     return node_i
 
   def get_next_node_i(self):
-    for i in range(len(self.node_names)):
-      if self.node_names[i] is None:
-        return i
-    return len(self.node_names)
+    branch_number_list = []
+    for node_name in self._node_names:
+      if node_name.isnumeric():
+        branch_number_list.append(int(node_name))
+    branch_number_list.sort()
+    for i in range(len(branch_number_list)):
+      if i + 1 != branch_number_list[i]:
+        return i + 1
+    return len(branch_number_list) + 1
 
   def create_node(self, node_name):
     node_i = self._create_node(node_name)
@@ -65,7 +70,7 @@ class GitTree(object):
     return node_i
 
   def set_node_name(self, index, name):
-    self.node_names[index] = name
+    self._node_names[index] = name
     self._save()
 
   def _add_edge(self, p, c):
@@ -75,7 +80,7 @@ class GitTree(object):
   def _get_node_index(self, node_index_or_name):
     if isinstance(node_index_or_name, int):
       return node_index_or_name
-    return self.node_names.index(node_index_or_name)
+    return self._node_names.index(node_index_or_name)
 
   def add_edge(self, p, c):
     self._add_edge(self._get_node_index(p), self._get_node_index(c))
@@ -117,11 +122,11 @@ class GitTree(object):
     self.move_one_edge(node_i, -1)
     self.p.pop(node_i)
     self.c.pop(node_i)
-    self.node_names[node_i] = None
+    self._node_names[node_i] = None
     self._save()
 
   def remove_node_by_name(self, node_name):
-    node_i = self.node_names.index(node_name)
+    node_i = self._node_names.index(node_name)
     if node_i >= 0:
       self.remove_node_by_index(node_i)
 
@@ -147,19 +152,25 @@ class GitTree(object):
                    _prefix="",
                    _last=True,
                    current_node_name=None):
-    node_name = self.node_names[node_i]
+    node_name = self._node_names[node_i]
     display_name = node_display_cb(node_name)
     if node_name.isnumeric() and int(node_name) == node_i:
       # don't show node name if it is same as the index
       display_prefix = ""
     else:
       display_prefix = "[%s]" % node_name
-    msg = display_prefix + " : " + display_name
+    msg = " : " + display_name
     if node_name == current_node_name:
       msg += "  <==============="
 
     print(
-        _prefix, "`- " if _last else "|- ", node_i, " ", msg, sep="", file=file)
+        _prefix,
+        "`- " if _last else "|- ",
+        node_name,
+        " ",
+        msg,
+        sep="",
+        file=file)
     _prefix += "   " if _last else "|  "
     child_count = len(self.c[node_i])
     for i, child in enumerate(self.c[node_i]):
@@ -168,19 +179,23 @@ class GitTree(object):
                         current_node_name)
 
   def _save(self):
-    data = {"node_names": self.node_names, "edges": self.get_all_edges()}
-    with open(self.data_path, "w") as fout:
+    if self._data_path is None:
+      return
+    data = {"node_names": self._node_names, "edges": self.get_all_edges()}
+    with open(self._data_path, "w") as fout:
       json.dump(data, fout)
 
   def _load(self):
-    if not os.path.exists(self.data_path):
-      self.node_names.append("master")
+    if self._data_path is None:
+      return
+    if not os.path.exists(self._data_path):
+      self._node_names.append("master")
       self._save()
 
-    with open(self.data_path) as fin:
+    with open(self._data_path) as fin:
       data = json.load(fin)
-      self.node_names = data["node_names"]
-      for node_i, node_name in enumerate(self.node_names):
+      self._node_names = data["node_names"]
+      for node_i, node_name in enumerate(self._node_names):
         if node_name is None:
           continue
         self._create_node_by_index(node_i)
@@ -188,4 +203,4 @@ class GitTree(object):
         self._add_edge(edge[0], edge[1])
 
   def get_node_name(self, node_index):
-    return self.node_names[node_index]
+    return self._node_names[node_index]

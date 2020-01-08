@@ -33,26 +33,43 @@ class GitRebaser(object):
   """
 
   def __init__(self):
-    self._tree_path = self._find_tree_data_file()
-    if self._tree_path is not None:
-      self._tree = git_tree.GitTree(self._tree_path)
+    self._root_dir = self._find_root_dir()
+    self._tree_path = None
+    self._tree = self._create_tree()
 
-  def _find_tree_data_file(self):
+  def _get_branches_from_git_command_result(self, result):
+    branches = []
+    for x in result.split("\n"):
+      branches.append(x.strip())
+    return branches
+
+  def _create_tree(self):
+    branch_commit_hash_map = {}
+    branches_info = common.sys_output("git branch -v")
+    tree = git_tree.GitTree()
+    for branch_info in branches_info.split("\n"):
+      if branch_info[0] == "*":
+        branch_info = branch_info[1:]
+      branch_name, branch_commit_hash, *_ = branch_info.split()
+      branch_commit_hash_map[branch_commit_hash] = branch_name
+      tree.create_node(branch_name)
+
+    for branch_commit_hash, branch_name in branch_commit_hash_map.items():
+      parent_hash = common.sys_output("git rev-parse %s^" % branch_commit_hash)
+      parent_hash = parent_hash[:9]
+      if parent_hash in branch_commit_hash_map:
+        tree.add_edge(branch_commit_hash_map[parent_hash], branch_name)
+    return tree
+
+  def _find_root_dir(self):
     path = pathlib.Path(os.getcwd())
     while str(path) != path.root:
-      tree_path = os.path.join(path, _TREE_FILE_NAME)
+      tree_path = os.path.join(path, ".git")
       result = glob.glob(tree_path)
       if len(result) > 0:
-        return result[0]
+        return path
       path = path.parent
     return None
-
-  def _validate(self):
-    if self._tree_path is None:
-      print(
-          "Error: Cannot find tree data file. Please use 'init' arg to initialize."
-      )
-      exit(1)
 
   def _switch_branch(self, new_branch_name):
     #error = common.sys_raise("git diff-index --quiet HEAD -- && git checkout " + new_branch_name)
@@ -67,10 +84,7 @@ class GitRebaser(object):
     return current_branch_name
 
   def _get_brief_commit_message(self, branch_name):
-    if branch_name == "master":
-      log_format = "'(sync %cr) %h'"
-    else:
-      log_format = "%B"
+    log_format = "'(%cr) %B'"
     return common.sys_output("git log --format=%s -n 1 %s | head -1" %
                              (log_format, branch_name))
 
@@ -83,12 +97,15 @@ class GitRebaser(object):
       print("ERROR")
       exit(1)
 
-    error = common.sys_raise("git update-parent " + parent_name)
+    error = common.sys("git rebase --onto %s HEAD^1" % parent_name)
+    if error:
+      print("ERROR on rebasing")
+      exit(1)
     self._tree.move_one_edge(node_i, new_parent_i)
 
-  def _update_whole_branch(self, node_i, new_parent_i):
-    node_i = int(node_i)
-    new_parent_i = int(new_parent_i)
+  def _update_whole_branch(self, node_name, new_parent_name):
+    node_i = self._tree._get_node_index(node_name)
+    new_parent_i = self._tree._get_node_index(new_parent_name)
     for edge in [[new_parent_i, node_i]] + self._tree.get_subedges(node_i):
       self._update_one_git_edge(edge[1], edge[0])
 
@@ -97,17 +114,14 @@ class GitRebaser(object):
       git_tree.GitTree(_TREE_FILE_NAME)
 
   def xl(self, args):
-    self._validate()
     self._tree.pprint(
         cb=lambda name: self._get_brief_commit_message(name),
         current_node_name=self._get_current_branch_name())
 
   def rebase(self, args):
-    self._validate()
     self._update_whole_branch(args.source, args.dest)
 
   def commit(self, args):
-    self._validate()
     branch_name = args.branch_name
     if branch_name is None:
       branch_name = str(self._tree.get_next_node_i())
@@ -119,35 +133,29 @@ class GitRebaser(object):
     self._tree.add_edge(current_name, branch_name)
 
   def amend(self, args):
-    self._validate()
     common.sys_raise("git commit --amend --no-edit")
     current_branch = self._get_current_branch_name()
     self._tree.move_one_edge(current_branch,
                              self._tree.get_parent(current_branch))
 
   def prune(self, args):
-    self._validate()
-    branch_name = self._tree.get_node_name(args.branch_index)
+    branch_name = args.branch_name
     common.sys_raise("git branch -D %s" % branch_name)
     self._tree.remove_node_by_name(branch_name)
 
   def update(self, args):
-    self._validate()
-    branch_name = self._tree.get_node_name(args.branch_index)
+    branch_name = args.branch_name
     common.sys_raise("git checkout %s" % branch_name)
 
   def sync(self, args):
-    self._validate()
     common.sys_raise("git checkout master")
     common.sys_raise("git pull")
     self._tree.move_one_edge(0, -1)
 
   def diff(self, args):
-    self._validate()
     self.diff_parent("diff")
 
   def difftool(self, args):
-    self._validate()
     self.diff_parent("difftool")
 
   def diff_parent(self, git_command, *args):

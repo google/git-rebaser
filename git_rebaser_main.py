@@ -46,7 +46,7 @@ def main():
   sub_arg.add_argument(
       '--branch_name',
       default=None,
-      help='branch name. If not specified, it will use next available branch index'
+      help='branch name. If not specified, it will use next available positive number'
   )
 
   sub_arg = subparsers.add_parser(
@@ -68,15 +68,14 @@ def main():
   sub_arg = subparsers.add_parser(
       **_get_arg_with_aliases('prune'),
       help='delete a branch, but keeping sub branches if there is any')
-  sub_arg.add_argument('branch_index', type=int)
+  sub_arg.add_argument('branch_name')
 
   sub_arg = subparsers.add_parser(
       **_get_arg_with_aliases('rebase'),
       help='rebase a branch with its sub-branches(the whole chain) on top of a branch'
   )
-  sub_arg.add_argument('-s', '--source', type=int, help='source branch index')
-  sub_arg.add_argument(
-      '-d', '--dest', type=int, help='destination branch index')
+  sub_arg.add_argument('-s', '--source', help='source branch name')
+  sub_arg.add_argument('-d', '--dest', help='destination branch name')
 
   sub_arg = subparsers.add_parser(
       **_get_arg_with_aliases('sync'), help='sync git from remote')
@@ -84,7 +83,7 @@ def main():
   sub_arg = subparsers.add_parser(
       **_get_arg_with_aliases('update'),
       help='update working directory (or switch revisions)')
-  sub_arg.add_argument('branch_index', type=int)
+  sub_arg.add_argument('branch_name')
 
   args = parser.parse_args()
   sub_arg_name = args.subparser_name
