@@ -56,9 +56,10 @@ class GitRebaser(object):
 
     for branch_commit_hash, branch_name in branch_commit_hash_map.items():
       parent_hash = common.sys_output("git rev-parse %s^" % branch_commit_hash)
-      parent_hash = parent_hash[:9]
-      if parent_hash in branch_commit_hash_map:
-        tree.add_edge(branch_commit_hash_map[parent_hash], branch_name)
+      for p_commit_hash, p_branch_name in branch_commit_hash_map.items():
+        if parent_hash.startswith(p_commit_hash):
+          tree.add_edge(p_branch_name, branch_name)
+          break
     return tree
 
   def _find_root_dir(self):
