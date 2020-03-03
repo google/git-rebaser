@@ -34,6 +34,7 @@ class GitRebaser(object):
 
   def __init__(self):
     self._root_dir = self._find_root_dir()
+    self._branch_name_to_hash = {}
     self._tree_path = None
     self._tree = self._create_tree()
 
@@ -51,15 +52,19 @@ class GitRebaser(object):
       if branch_info[0] == "*":
         branch_info = branch_info[1:]
       branch_name, branch_commit_hash, *_ = branch_info.split()
-      branch_commit_hash_map[branch_commit_hash] = branch_name
-      tree.create_node(branch_name)
+      if not branch_commit_hash in branch_commit_hash_map:
+        tree.create_node(branch_commit_hash)
+        branch_commit_hash_map[branch_commit_hash] = []
+      branch_commit_hash_map[branch_commit_hash].append(branch_name)
+      self._branch_name_to_hash[branch_name] = branch_commit_hash
 
-    for branch_commit_hash, branch_name in branch_commit_hash_map.items():
+    for branch_commit_hash in branch_commit_hash_map.keys():
       parent_hash = common.sys_output("git rev-parse %s^" % branch_commit_hash)
-      for p_commit_hash, p_branch_name in branch_commit_hash_map.items():
+      for p_commit_hash in branch_commit_hash_map.keys():
         if parent_hash.startswith(p_commit_hash):
-          tree.add_edge(p_branch_name, branch_name)
+          tree.add_edge(p_commit_hash, branch_commit_hash)
           break
+    tree.add_name_mapping(branch_commit_hash_map)
     return tree
 
   def _find_root_dir(self):
@@ -173,3 +178,6 @@ class GitRebaser(object):
       new_name = str(node_index)
     common.sys_raise("git branch -m %s" % new_name)
     self._tree.set_node_name(node_index, new_name)
+
+  def set_as_master_branch(self, args):
+    common.sys_raise("git checkout -b 0")

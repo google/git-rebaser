@@ -23,6 +23,7 @@ class GitTree(object):
     self.p = {}
     self._data_path = _data_path
     self._node_names = []
+    self._name_mapping = None
     if load:
       self._load()
 
@@ -80,6 +81,8 @@ class GitTree(object):
   def _get_node_index(self, node_index_or_name):
     if isinstance(node_index_or_name, int):
       return node_index_or_name
+    if node_index_or_name not in self._node_names:
+      node_index_or_name = self._mapped_name_to_node_name(node_index_or_name)
     return self._node_names.index(node_index_or_name)
 
   def add_edge(self, p, c):
@@ -125,7 +128,15 @@ class GitTree(object):
     self._node_names[node_i] = None
     self._save()
 
-  def remove_node_by_name(self, node_name):
+  def _mapped_name_to_node_name(self, mapped_name):
+    if self._name_mapping is not None:
+      for node_name, mapped_names in self._name_mapping.items():
+        if mapped_name in mapped_names:
+          return node_name
+    return mapped_name
+
+  def remove_node_by_name(self, mapped_name):
+    node_name = self._mapped_name_to_node_name(mapped_name)
     node_i = self._node_names.index(node_name)
     if node_i >= 0:
       self.remove_node_by_index(node_i)
@@ -137,6 +148,10 @@ class GitTree(object):
         # root node_i
         result.extend(self.get_subedges(node_i))
     return result
+
+  def add_name_mapping(self, name_mapping):
+    # name to real branch names
+    self._name_mapping = name_mapping
 
   def pprint(self, cb, current_node_name=None):
 
@@ -153,20 +168,19 @@ class GitTree(object):
                    _last=True,
                    current_node_name=None):
     node_name = self._node_names[node_i]
-    display_name = node_display_cb(node_name)
-    if node_name.isnumeric() and int(node_name) == node_i:
-      # don't show node name if it is same as the index
-      display_prefix = ""
+    if self._name_mapping is not None:
+      node_names = self._name_mapping[node_name]
     else:
-      display_prefix = "[%s]" % node_name
+      node_names = [node_name]
+    display_name = node_display_cb(node_names[0])
     msg = " : " + display_name
-    if node_name == current_node_name:
+    if current_node_name in node_names:
       msg += "  <==============="
 
     print(
         _prefix,
         "`- " if _last else "|- ",
-        node_name,
+        ", ".join(node_names),
         " ",
         msg,
         sep="",

@@ -50,6 +50,11 @@ def main():
   )
 
   sub_arg = subparsers.add_parser(
+      **_get_arg_with_aliases('set_as_master_branch'),
+      help='Set current branch as master branch, it will be associated with another'
+      ' branch name 0 so it is easier to refer to')
+
+  sub_arg = subparsers.add_parser(
       **_get_arg_with_aliases('diff'), help='diff file with parent branch')
 
   sub_arg = subparsers.add_parser(
