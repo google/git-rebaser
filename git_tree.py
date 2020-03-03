@@ -79,8 +79,6 @@ class GitTree(object):
     self.p[c] = p
 
   def _get_node_index(self, node_index_or_name):
-    if isinstance(node_index_or_name, int):
-      return node_index_or_name
     if node_index_or_name not in self._node_names:
       node_index_or_name = self._mapped_name_to_node_name(node_index_or_name)
     return self._node_names.index(node_index_or_name)
@@ -91,7 +89,7 @@ class GitTree(object):
 
   def get_parent(self, node_i_or_name):
     node_i = self._get_node_index(node_i_or_name)
-    return self.p[node_i]
+    return self.get_branch_name(self.p[node_i])
 
   def get_subedges(self, node_i):
     result = []
@@ -100,9 +98,18 @@ class GitTree(object):
       result.extend(self.get_subedges(child))
     return result
 
+  def get_branch_name(self, node_i):
+    node_name = self.get_node_name(node_i)
+    if self._name_mapping is None:
+      return node_name
+    return self._name_mapping[node_name][0]
+
   def move_one_edge(self, node_i_or_name, new_parent_i_or_name):
     node_i = self._get_node_index(node_i_or_name)
     new_parent_i = self._get_node_index(new_parent_i_or_name)
+    self.move_one_edge_by_index(node_i, new_parent_i)
+
+  def move_one_edge_by_index(self, node_i, new_parent_i):
     #handle old parent
     old_parent = self.p[node_i]
     if old_parent >= 0:
@@ -131,6 +138,7 @@ class GitTree(object):
   def _mapped_name_to_node_name(self, mapped_name):
     if self._name_mapping is not None:
       for node_name, mapped_names in self._name_mapping.items():
+        print(node_name, mapped_names, mapped_name, "><><")
         if mapped_name in mapped_names:
           return node_name
     return mapped_name
@@ -152,6 +160,9 @@ class GitTree(object):
   def add_name_mapping(self, name_mapping):
     # name to real branch names
     self._name_mapping = name_mapping
+    if 0:
+      for index, name in enumerate(self._node_names):
+        print("index, name, branch", index, name, self._name_mapping[name])
 
   def pprint(self, cb, current_node_name=None):
 

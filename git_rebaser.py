@@ -95,10 +95,10 @@ class GitRebaser(object):
                              (log_format, branch_name))
 
   def _update_one_git_edge(self, node_i, new_parent_i):
-    node_name = self._tree.get_node_name(node_i)
-    parent_name = self._tree.get_node_name(new_parent_i)
-    print("Rebase %s to %s" % (node_name, parent_name))
-    error = self._switch_branch(node_name)
+    branch_name = self._tree.get_branch_name(node_i)
+    parent_name = self._tree.get_branch_name(new_parent_i)
+    print("Rebase %s to %s" % (branch_name, parent_name))
+    error = self._switch_branch(branch_name)
     if error:
       print("ERROR")
       exit(1)
@@ -107,10 +107,10 @@ class GitRebaser(object):
     if error:
       print("ERROR on rebasing")
       exit(1)
-    self._tree.move_one_edge(node_i, new_parent_i)
+    self._tree.move_one_edge_by_index(node_i, new_parent_i)
 
-  def _update_whole_branch(self, node_name, new_parent_name):
-    node_i = self._tree._get_node_index(node_name)
+  def _update_whole_branch(self, branch_name, new_parent_name):
+    node_i = self._tree._get_node_index(branch_name)
     new_parent_i = self._tree._get_node_index(new_parent_name)
     for edge in [[new_parent_i, node_i]] + self._tree.get_subedges(node_i):
       self._update_one_git_edge(edge[1], edge[0])
@@ -156,7 +156,7 @@ class GitRebaser(object):
   def sync(self, args):
     common.sys_raise("git checkout master")
     common.sys_raise("git pull")
-    self._tree.move_one_edge(0, -1)
+    self._tree.move_one_edge_by_index(0, -1)
 
   def diff(self, args):
     self.diff_parent("diff")
