@@ -166,8 +166,7 @@ class GitRebaser(object):
 
   def diff_parent(self, git_command, *args):
     current_branch = self._get_current_branch_name()
-    parent_branch_name = self._tree.get_node_name(
-        self._tree.get_parent(current_branch))
+    parent_branch_name = self._tree.get_parent(current_branch)
     opt = " ".join(args)
     common.sys_raise("git %s %s %s" % (git_command, parent_branch_name, opt))
 

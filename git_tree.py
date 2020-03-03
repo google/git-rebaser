@@ -138,7 +138,6 @@ class GitTree(object):
   def _mapped_name_to_node_name(self, mapped_name):
     if self._name_mapping is not None:
       for node_name, mapped_names in self._name_mapping.items():
-        print(node_name, mapped_names, mapped_name, "><><")
         if mapped_name in mapped_names:
           return node_name
     return mapped_name
