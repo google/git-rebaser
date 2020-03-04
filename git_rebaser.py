@@ -115,6 +115,17 @@ class GitRebaser(object):
     for edge in [[new_parent_i, node_i]] + self._tree.get_subedges(node_i):
       self._update_one_git_edge(edge[1], edge[0])
 
+  def _get_next_available_branch(self):
+    int_branch_set = set()
+    for branch_name in self._branch_name_to_hash.keys():
+      if branch_name.isnumeric():
+        int_branch_set.add(int(branch_name))
+    total = len(int_branch_set)
+    for i in range(1, total + 1):
+      if i not in int_branch_set:
+        return i
+    return total + 1
+
   def init(self, args):
     if not os.path.exists(_TREE_FILE_NAME):
       git_tree.GitTree(_TREE_FILE_NAME)
@@ -130,10 +141,10 @@ class GitRebaser(object):
   def commit(self, args):
     branch_name = args.branch_name
     if branch_name is None:
-      branch_name = str(self._tree.get_next_node_i())
+      branch_name = str(self._get_next_available_branch())
 
     current_name = self._get_current_branch_name()
-    common.sys_raise("git checkout -b %s; git commit" % branch_name)
+    common.sys_raise("git checkout -b %s && git commit" % branch_name)
     # Add a new one.
     self._tree.create_node(branch_name)
     self._tree.add_edge(current_name, branch_name)

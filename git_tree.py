@@ -54,17 +54,6 @@ class GitTree(object):
     self._create_node_by_index(node_i)
     return node_i
 
-  def get_next_node_i(self):
-    branch_number_list = []
-    for node_name in self._node_names:
-      if node_name.isnumeric():
-        branch_number_list.append(int(node_name))
-    branch_number_list.sort()
-    for i in range(len(branch_number_list)):
-      if i + 1 != branch_number_list[i]:
-        return i + 1
-    return len(branch_number_list) + 1
-
   def create_node(self, node_name):
     node_i = self._create_node(node_name)
     self._save()
@@ -82,6 +71,25 @@ class GitTree(object):
     if node_index_or_name not in self._node_names:
       node_index_or_name = self._mapped_name_to_node_name(node_index_or_name)
     return self._node_names.index(node_index_or_name)
+
+  def _move_one_edge_by_index(self, node_i, new_parent_i):
+    #handle old parent
+    old_parent = self.p[node_i]
+    if old_parent >= 0:
+      self.c[old_parent].remove(node_i)
+
+    #handle new parent
+    self.p[node_i] = new_parent_i
+    if new_parent_i >= 0:
+      self.c[new_parent_i].append(node_i)
+
+    # handle old children
+    for child in self.c[node_i]:
+      self.p[child] = -1
+
+    # reset new children
+    self.c[node_i] = []
+    self._save()
 
   def add_edge(self, p, c):
     self._add_edge(self._get_node_index(p), self._get_node_index(c))
@@ -107,29 +115,10 @@ class GitTree(object):
   def move_one_edge(self, node_i_or_name, new_parent_i_or_name):
     node_i = self._get_node_index(node_i_or_name)
     new_parent_i = self._get_node_index(new_parent_i_or_name)
-    self.move_one_edge_by_index(node_i, new_parent_i)
-
-  def move_one_edge_by_index(self, node_i, new_parent_i):
-    #handle old parent
-    old_parent = self.p[node_i]
-    if old_parent >= 0:
-      self.c[old_parent].remove(node_i)
-
-    #handle new parent
-    self.p[node_i] = new_parent_i
-    if new_parent_i >= 0:
-      self.c[new_parent_i].append(node_i)
-
-    # handle old children
-    for child in self.c[node_i]:
-      self.p[child] = -1
-
-    # reset new children
-    self.c[node_i] = []
-    self._save()
+    self._move_one_edge_by_index(node_i, new_parent_i)
 
   def remove_node_by_index(self, node_i):
-    self.move_one_edge(node_i, -1)
+    self._move_one_edge_by_index(node_i, -1)
     self.p.pop(node_i)
     self.c.pop(node_i)
     self._node_names[node_i] = None
