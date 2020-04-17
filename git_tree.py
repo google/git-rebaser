@@ -72,7 +72,7 @@ class GitTree(object):
       node_index_or_name = self._mapped_name_to_node_name(node_index_or_name)
     return self._node_names.index(node_index_or_name)
 
-  def _move_one_edge_by_index(self, node_i, new_parent_i):
+  def move_one_edge_by_index(self, node_i, new_parent_i):
     #handle old parent
     old_parent = self.p[node_i]
     if old_parent >= 0:
@@ -115,10 +115,10 @@ class GitTree(object):
   def move_one_edge(self, node_i_or_name, new_parent_i_or_name):
     node_i = self._get_node_index(node_i_or_name)
     new_parent_i = self._get_node_index(new_parent_i_or_name)
-    self._move_one_edge_by_index(node_i, new_parent_i)
+    self.move_one_edge_by_index(node_i, new_parent_i)
 
   def remove_node_by_index(self, node_i):
-    self._move_one_edge_by_index(node_i, -1)
+    self.move_one_edge_by_index(node_i, -1)
     self.p.pop(node_i)
     self.c.pop(node_i)
     self._node_names[node_i] = None
